@@ -1,0 +1,69 @@
+# =============================================================================
+# D3X — GLPI en production (sonde-01)
+# =============================================================================
+# Deux services :
+#   - glpi-app : notre image GLPI compilée depuis le fork (Dockerfile racine)
+#   - glpi-db  : image MariaDB dédiée (db/Dockerfile)
+# Persistance : volumes nommés (fichiers, config, plugins, données DB).
+# =============================================================================
+
+services:
+  glpi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: d3x/glpi:latest
+    container_name: d3x-glpi-app
+    restart: unless-stopped
+    ports:
+      # Bind explicite LAN (192.168.1.41) + WireGuard (10.0.88.41) pour
+      # tester en local puis exposer via le reverse-proxy plus tard.
+      - "${GLPI_BIND_IP:-0.0.0.0}:${GLPI_PORT:-8080}:80"
+    depends_on:
+      glpi-db:
+        condition: service_healthy
+    environment:
+      # Variables lues par notre entrypoint/installation (documentation).
+      GLPI_DB_HOST: glpi-db
+      GLPI_DB_NAME: glpi
+      GLPI_DB_USER: glpi
+      GLPI_DB_PASSWORD: ${GLPI_DB_PASSWORD}
+      TZ: Europe/Paris
+    volumes:
+      - glpi_files:/var/www/glpi/files
+      - glpi_config:/var/www/glpi/config
+      - glpi_plugins:/var/www/glpi/plugins
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  glpi-db:
+    build:
+      context: db
+      dockerfile: Dockerfile
+    image: d3x/glpi-db:latest
+    container_name: d3x-glpi-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${GLPI_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: glpi
+      MARIADB_USER: glpi
+      MARIADB_PASSWORD: ${GLPI_DB_PASSWORD}
+      TZ: Europe/Paris
+    volumes:
+      - glpi_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  glpi_files:
+  glpi_config:
+  glpi_plugins:
+  glpi_db_data:
