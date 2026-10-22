@@ -6,9 +6,8 @@ vendor
 tests
 .github
 *.md
-Dockerfile
 docker-compose.yaml
-docker-entrypoint.sh
+compose.yaml
 db
 deploy_glpi.sh
 .dockerignore

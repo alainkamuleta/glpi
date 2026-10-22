@@ -73,6 +73,15 @@ if ! docker compose version >/dev/null 2>&1; then
     exit 1
 fi
 
+# Fichier compose explicite : `compose.yaml` (notre stack prod) prime sur le
+# `docker-compose.yaml` officiel de GLPI (environnement de dev upstream).
+COMPOSE_FILE="compose.yaml"
+COMPOSE_CMD=(docker compose -f "$COMPOSE_FILE")
+if [[ ! -f "$COMPOSE_FILE" ]]; then
+    echo "[deploy] ERREUR : $COMPOSE_FILE introuvable dans $DEPLOY_DIR." >&2
+    exit 1
+fi
+
 echo "======================================================"
 echo " Déploiement GLPI D3X"
 echo "   Port hôte     : ${PORT}"
@@ -83,21 +92,21 @@ echo "======================================================"
 # --- Build des images --------------------------------------------------------
 if [[ "$REBUILD" -eq 1 ]]; then
     echo "[deploy] Rebuild complet (--no-cache) des images GLPI + DB..."
-    docker compose build --no-cache
+    "${COMPOSE_CMD[@]}" build --no-cache
 else
     echo "[deploy] Build des images GLPI + DB (cache si possible)..."
-    docker compose build
+    "${COMPOSE_CMD[@]}" build
 fi
 
 # --- Démarrage de la stack ---------------------------------------------------
 echo "[deploy] Démarrage de la stack (glpi-app + glpi-db)..."
-docker compose up -d
+"${COMPOSE_CMD[@]}" up -d
 
 # --- Attente de la santé des conteneurs --------------------------------------
 echo "[deploy] Attente de la disponibilité des services..."
 ATTEMPTS=0
 MAX_ATTEMPTS=60   # 60 x 10s = 10 minutes max
-until docker compose ps --format '{{.Name}} {{.Health}}' | grep -q 'glpi-app.*healthy' \
+until "${COMPOSE_CMD[@]}" ps --format '{{.Name}} {{.Health}}' | grep -q 'glpi-app.*healthy' \
       || [[ $ATTEMPTS -ge $MAX_ATTEMPTS ]]; do
     sleep 10
     ATTEMPTS=$((ATTEMPTS + 1))
@@ -105,7 +114,7 @@ until docker compose ps --format '{{.Name}} {{.Health}}' | grep -q 'glpi-app.*he
 done
 
 echo "[deploy] État des conteneurs :"
-docker compose ps
+"${COMPOSE_CMD[@]}" ps
 
 # --- Affichage de l'URL ------------------------------------------------------
 echo ""
