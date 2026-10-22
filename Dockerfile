@@ -83,17 +83,23 @@ RUN php bin/console dependencies install --allow-superuser \
 # -----------------------------------------------------------------------------
 FROM php:8.4-apache
 
-# Dépendances d'exécution (libs des extensions, sans les outils de build)
+# Dépendances pour recompiler les extensions PHP (les paquets -dev tirent
+# automatiquement les bonnes libs d'exécution, quel que soit la version Debian
+# de l'image de base). curl/ca-certificates servent au healthcheck.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libicu74 \
-        libpng16-16 \
-        libjpeg62-turbo \
-        libfreetype6 \
-        libcurl4 \
-        libldap2 \
-        libzip4 \
-        libonig5 \
-        libpq5 \
+        libzip-dev \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+        libicu-dev \
+        libonig-dev \
+        libxml2-dev \
+        libcurl4-openssl-dev \
+        libldap2-dev \
+        libbz2-dev \
+        libssl-dev \
+        zlib1g-dev \
+        libpq-dev \
         ca-certificates \
         curl \
     && rm -rf /var/lib/apt/lists/*
