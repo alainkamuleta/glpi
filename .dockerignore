@@ -3,7 +3,6 @@
 node_modules
 vendor
 .docker
-tests
 .github
 *.md
 docker-compose.yaml
