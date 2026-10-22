@@ -77,6 +77,7 @@ COPY . .
 #   php bin/console dependencies install
 # qui enchaîne composer install + npm install + npm run build + locales compile.
 RUN php bin/console dependencies install --allow-superuser \
+    && composer dump-autoload --no-dev --optimize \
     && rm -rf node_modules .git tests .github
 
 # -----------------------------------------------------------------------------
