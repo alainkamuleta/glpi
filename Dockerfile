@@ -13,7 +13,7 @@
 # -----------------------------------------------------------------------------
 FROM php:8.4-cli AS builder
 
-ARG NODE_VERSION=22.11.0
+ARG NODE_VERSION=22.14.0
 
 # Dépendances système nécessaires au build (dont `patch` pour les post-install
 # de composer, et les libs des extensions PHP compilées).
