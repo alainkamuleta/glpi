@@ -129,12 +129,12 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Modules Apache nécessaires
 RUN a2enmod rewrite headers
 
-# DocumentRoot : GLPI 11 sert depuis public/
+# DocumentRoot + réécriture : GLPI 11 sert depuis public/ via un front
+# controller unique. Vhost dédié (voir docker-glpi-apache.conf) plutôt qu'un
+# sed fragile sur le vhost par défaut : GLPI ne fournit pas de .htaccess, donc
+# les règles RewriteEngine + AllowOverride sont injectées directement ici.
 ENV APACHE_DOCUMENT_ROOT=/var/www/glpi/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-        /etc/apache2/sites-available/*.conf \
-        /etc/apache2/apache2.conf \
-        /etc/apache2/conf-available/*.conf
+COPY docker-glpi-apache.conf /etc/apache2/sites-available/000-default.conf
 
 # Copie de l'application compilée depuis le builder
 COPY --from=builder --chown=www-data:www-data /var/www/glpi /var/www/glpi
